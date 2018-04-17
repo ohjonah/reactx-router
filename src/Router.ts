@@ -2,7 +2,7 @@ import { Router as Director } from 'director/build/director';
 import { action, autorun, computed, observable } from 'mobx';
 import * as queryString from 'query-string';
 import { Default404View } from './components/Default404';
-import { IBeforeExitViewState, IPathParams, IQueryParams, IRoute, IRouter, IViewState, ILifeCycleViewStates } from './interfaces';
+import { ILifeCycleViewStates, IPathParams, IQueryParams, IRoute, IRouter, IViewState } from './interfaces';
 import { Route } from './Route';
 import { buildPathParamsObject, invariant, isNullOrUndefined } from './utils/utils';
 
