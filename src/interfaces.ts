@@ -26,10 +26,16 @@ export interface IRoute {
 }
 
 export interface IViewState {
+    route: IRoute;
     params: IPathParams;
     query: IQueryParams;
     hash: string;
-    currentRoute: IRoute;
+}
+
+export interface ILifeCycleViewStates {
+    previousViewState?: IViewState;
+    currentViewState: IViewState;
+    nextViewState?: IViewState;
 }
 
 export interface IRouter {
@@ -47,5 +53,5 @@ export interface IParams {
 export interface IPathParams extends IParams {}
 export interface IQueryParams extends IParams {}
 
-export type ILifecycleCallback = (state: IViewState, store?: any) => boolean | void;
-export type INonblockingLifecycleCallback = (state: IViewState, store?: any) => void;
+export type ILifecycleCallback = (state: ILifeCycleViewStates | IViewState, store?: any) => boolean | void;
+export type INonblockingLifecycleCallback = (state: ILifeCycleViewStates | IViewState, store?: any) => void;

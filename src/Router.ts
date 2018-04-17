@@ -2,9 +2,9 @@ import { Router as Director } from 'director/build/director';
 import { action, autorun, computed, observable } from 'mobx';
 import * as queryString from 'query-string';
 import { Default404View } from './components/Default404';
-import { IPathParams, IQueryParams, IRoute, IRouter, IViewState } from './interfaces';
-import { buildPathParamsObject, invariant, isNullOrUndefined } from './utils/utils';
+import { IBeforeExitViewState, IPathParams, IQueryParams, IRoute, IRouter, IViewState, ILifeCycleViewStates } from './interfaces';
 import { Route } from './Route';
+import { buildPathParamsObject, invariant, isNullOrUndefined } from './utils/utils';
 
 export class Router implements IRouter {
     private _notFoundComponent: React.ComponentType<any>;
@@ -53,7 +53,7 @@ export class Router implements IRouter {
             params: this._pathParams,
             query: this._queryParams,
             hash: this._hash,
-            currentRoute: this._currentRoute,
+            route: this._currentRoute,
         };
     }
 
@@ -85,11 +85,43 @@ export class Router implements IRouter {
 
     @action
     goTo(name: string, params?: IPathParams, query?: IQueryParams, hash?: string) {
+
+        // beforeExit method
         const currentRoute = this._currentRoute;
+        const nextRoute = this._routes.get(name);
+
+        const currentParams = this._pathParams;
+        const currentQuery = this._queryParams;
+        const currentHash = this._hash;
+
+        const nextParams = params;
+        const nextQuery = query;
+        const nextHash = hash;
+
+        // not finding the route is an invariant, since the developer would
+        // have called goTo('name') and failed to have set up the route with that name
+        // we do not display the 404 page here because the error came from the code base
+        // and not the user going to a url that isn't supported
+        invariant(isNullOrUndefined(nextRoute), `no route with name ${name} was configured, but router.goTo() was invoked with that name.`);
+
+        const beforeExitViewState: ILifeCycleViewStates = {
+            currentViewState: {
+                route: currentRoute,
+                params: currentParams,
+                query: currentQuery,
+                hash: currentHash,
+            },
+            nextViewState: {
+                route: nextRoute,
+                params: nextParams,
+                query: nextQuery,
+                hash: nextHash,
+            },
+        };
 
         const beforeExitResult = !isNullOrUndefined(currentRoute)
             ? currentRoute.getLifecycleCallbackList('beforeExit').every(cb => {
-                const result = cb(this.currentViewState, this._store);
+                const result = cb(beforeExitViewState, this._store);
                 return result !== false;
             })
             : true;
@@ -98,20 +130,20 @@ export class Router implements IRouter {
             return;
         }
 
+        // beforeEnter method
         const newRoute = this._routes.get(name);
-
-        // not finding the route is an invariant, since the developer would
-        // have called goTo('name') and failed to have set up the route with that name
-        // we do not display the 404 page here because the error came from the code base
-        // and not the user going to a url that isn't supported
-        invariant(isNullOrUndefined(newRoute), `no route with name ${name} was configured, but router.goTo() was invoked with that name.`);
 
         this._pathParams = params;
         this._queryParams = query;
         this._hash = hash;
 
+        const beforeEnterViewState: ILifeCycleViewStates = {
+            previousViewState: beforeExitViewState.currentViewState,
+            currentViewState: beforeExitViewState.nextViewState,
+        };
+
         const beforeEnterResult = newRoute.getLifecycleCallbackList('beforeEnter').every(cb => {
-            const result = cb(this.currentViewState, this._store);
+            const result = cb(beforeEnterViewState, this._store);
             return !(result === false);
         });
         if (beforeEnterResult === false) {
