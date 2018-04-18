@@ -137,10 +137,7 @@ export class Router implements IRouter {
         this._queryParams = query;
         this._hash = hash;
 
-        const beforeEnterViewState: ILifeCycleViewStates = {
-            previousViewState: beforeExitViewState.currentViewState,
-            currentViewState: beforeExitViewState.nextViewState,
-        };
+        const beforeEnterViewState: ILifeCycleViewStates = beforeExitViewState;
 
         const beforeEnterResult = newRoute.getLifecycleCallbackList('beforeEnter').every(cb => {
             const result = cb(beforeEnterViewState, this._store);
@@ -152,8 +149,23 @@ export class Router implements IRouter {
 
         this._currentRoute = newRoute;
 
+        const onEnterViewState: ILifeCycleViewStates = {
+            previousViewState: {
+                route: currentRoute,
+                params: currentParams,
+                query: currentQuery,
+                hash: currentHash,
+            },
+            currentViewState: {
+                route: nextRoute,
+                params: nextParams,
+                query: nextQuery,
+                hash: nextHash,
+            },
+        };
+
         newRoute.getLifecycleCallbackList('onEnter').forEach(cb => {
-            cb(this.currentViewState, this._store);
+            cb(onEnterViewState, this._store);
         });
     }
 

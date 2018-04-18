@@ -546,6 +546,8 @@ describe('Router', () => {
             const nestedStub = sinon.stub();
             const nestednestedStub = sinon.stub();
 
+            console.log('hi trevor');
+
             const index: Route = new Route({
                 name: 'index',
                 path: '/',
@@ -584,6 +586,38 @@ describe('Router', () => {
             expect(firstStub.calledBefore(nestedStub)).to.be.true;
             expect(nestedStub.callCount).to.equal(1);
             expect(nestednestedStub.callCount).to.equal(0);
+        });
+
+        it('Does this work?', () => {
+            console.log('bye jonah');
+            const firstStub = sinon.stub();
+            expect(firstStub).to.be.false;
+        });
+
+        it('calls lifecycle callback with the correct parameters', () => {
+            window.history.pushState(null, null, '/');
+            const firstStub = sinon.stub();
+            const nestedStub = sinon.stub();
+
+            const index: Route = new Route({
+                name: 'index',
+                path: '/',
+                component: TestComponent,
+                beforeExit: state => {
+                    firstStub();
+                    console.log('currentViewState:', state.currentViewState);
+                },
+            });
+            const home = new Route({
+                name: 'home',
+                path: '/home',
+                component: TestComponent,
+            });
+
+            const router = new Router();
+            router.start([index, home]);
+            expect(firstStub.calledBefore(nestedStub)).to.be.true;
+            expect(nestedStub.callCount).to.equal(1);
         });
     });
 });
