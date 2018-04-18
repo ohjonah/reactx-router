@@ -546,8 +546,6 @@ describe('Router', () => {
             const nestedStub = sinon.stub();
             const nestednestedStub = sinon.stub();
 
-            console.log('hi trevor');
-
             const index: Route = new Route({
                 name: 'index',
                 path: '/',
@@ -588,36 +586,230 @@ describe('Router', () => {
             expect(nestednestedStub.callCount).to.equal(0);
         });
 
-        it('Does this work?', () => {
-            console.log('bye jonah');
-            const firstStub = sinon.stub();
-            expect(firstStub).to.be.false;
-        });
-
-        it('calls lifecycle callback with the correct parameters', () => {
+        it('calls beforeExit callback with currentViewState and nextViewState', () => {
             window.history.pushState(null, null, '/');
-            const firstStub = sinon.stub();
-            const nestedStub = sinon.stub();
+            const beforeExitStub = sinon.stub();
+            const onEnterStub = sinon.stub();
 
             const index: Route = new Route({
                 name: 'index',
                 path: '/',
                 component: TestComponent,
                 beforeExit: state => {
-                    firstStub();
-                    console.log('currentViewState:', state.currentViewState);
+                    beforeExitStub(state);
                 },
             });
+
             const home = new Route({
                 name: 'home',
                 path: '/home',
                 component: TestComponent,
+                onEnter: state => {
+                    onEnterStub();
+                },
+            });
+            const router = new Router();
+            router.start([index, home]);
+            router.goTo('home');
+            expect(beforeExitStub.getCall(0).args[0]).to.deep.equal({
+                currentViewState: { route: index, params: {}, query: {}, hash: '' },
+                nextViewState: { route: home, params: {}, query: {}, hash: '' },
+            });
+            expect(beforeExitStub.calledBefore(onEnterStub)).to.be.true;
+            expect(beforeExitStub.callCount).to.equal(1);
+            expect(onEnterStub.callCount).to.equal(1);
+        });
+
+        it('calls beforeExit callback and appends params and query to currentViewState and nextViewState', () => {
+            window.history.pushState(null, null, '/');
+            const beforeExitStub = sinon.stub();
+            const onEnterStub = sinon.stub();
+
+            const index: Route = new Route({
+                name: 'index',
+                path: '/',
+                component: TestComponent,
+                beforeExit: state => {
+                    beforeExitStub(state);
+                },
+            });
+
+            const home = new Route({
+                name: 'home',
+                path: '/home/:userId',
+                component: TestComponent,
+                onEnter: state => {
+                    onEnterStub();
+                },
             });
 
             const router = new Router();
             router.start([index, home]);
-            expect(firstStub.calledBefore(nestedStub)).to.be.true;
-            expect(nestedStub.callCount).to.equal(1);
+            router.goTo('home', { userId: 'test' }, { foo: 'bar' });
+            expect(beforeExitStub.getCall(0).args[0]).to.deep.equal({
+                currentViewState: { route: index, params: {}, query: {}, hash: '' },
+                nextViewState: { route: home, params: { userId: 'test' }, query: { foo: 'bar' }, hash: '' },
+            });
+            expect(window.location.search).to.equal('?foo=bar');
+            expect(window.location.pathname).to.equal('/home/test');
+            expect(beforeExitStub.calledBefore(onEnterStub)).to.be.true;
+            expect(beforeExitStub.callCount).to.equal(1);
+            expect(onEnterStub.callCount).to.equal(1);
+        });
+
+        it('calls beforeEnter callback with currentViewState and nextViewState', () => {
+            window.history.pushState(null, null, '/');
+            const beforeExitStub = sinon.stub();
+            const beforeEnterStub = sinon.stub();
+
+            const index: Route = new Route({
+                name: 'index',
+                path: '/',
+                component: TestComponent,
+                beforeExit: state => {
+                    beforeExitStub();
+                },
+            });
+
+            const home = new Route({
+                name: 'home',
+                path: '/home',
+                component: TestComponent,
+                beforeEnter: state => {
+                    beforeEnterStub(state);
+                },
+            });
+            const router = new Router();
+            router.start([index, home]);
+            router.goTo('home');
+
+            expect(beforeEnterStub.getCall(0).args[0]).to.deep.equal({
+                currentViewState: { route: index, params: {}, query: {}, hash: '' },
+                nextViewState: { route: home, params: {}, query: {}, hash: '' },
+            });
+            expect(beforeExitStub.calledBefore(beforeEnterStub)).to.be.true;
+            expect(beforeExitStub.callCount).to.equal(1);
+            expect(beforeEnterStub.callCount).to.equal(1);
+        });
+
+        it('calls beforeEnter callback and appends params and query to currentViewState and nextViewState', () => {
+            window.history.pushState(null, null, '/');
+            const beforeExitStub = sinon.stub();
+            const beforeEnterStub = sinon.stub();
+
+            const index: Route = new Route({
+                name: 'index',
+                path: '/',
+                component: TestComponent,
+                beforeExit: state => {
+                    beforeExitStub();
+                },
+            });
+
+            const home = new Route({
+                name: 'home',
+                path: '/home/:userId',
+                component: TestComponent,
+                beforeEnter: state => {
+                    beforeEnterStub(state);
+                },
+            });
+            const router = new Router();
+            router.start([index, home]);
+            router.goTo('home', { userId: 'test' }, { foo: 'bar' });
+
+            expect(beforeEnterStub.getCall(0).args[0]).to.deep.equal({
+                currentViewState: { route: index, params: {}, query: {}, hash: '' },
+                nextViewState: { route: home, params: { userId: 'test' }, query: { foo: 'bar' }, hash: '' },
+            });
+            expect(window.location.search).to.equal('?foo=bar');
+            expect(window.location.pathname).to.equal('/home/test');
+            expect(beforeExitStub.calledBefore(beforeEnterStub)).to.be.true;
+            expect(beforeExitStub.callCount).to.equal(1);
+            expect(beforeEnterStub.callCount).to.equal(1);
+        });
+
+
+        it('calls onEnter callback with currentViewState and previousViewState', () => {
+            window.history.pushState(null, null, '/');
+            const beforeExitStub = sinon.stub();
+            const beforeEnterStub = sinon.stub();
+            const onEnterStub = sinon.stub();
+
+            const index: Route = new Route({
+                name: 'index',
+                path: '/',
+                component: TestComponent,
+                beforeExit: state => {
+                    beforeExitStub();
+                },
+            });
+
+            const home = new Route({
+                name: 'home',
+                path: '/home',
+                component: TestComponent,
+                beforeEnter: state => {
+                    beforeEnterStub();
+                },
+                onEnter: state => {
+                    onEnterStub(state);
+                },
+            });
+            const router = new Router();
+            router.start([index, home]);
+            router.goTo('home');
+            expect(onEnterStub.getCall(0).args[0]).to.deep.equal({
+                currentViewState: { route: home, params: {}, query: {}, hash: '' },
+                previousViewState: { route: index, params: {}, query: {}, hash: '' },
+            });
+            expect(beforeExitStub.calledBefore(beforeEnterStub)).to.be.true;
+            expect(beforeEnterStub.calledBefore(onEnterStub)).to.be.true;
+            expect(beforeExitStub.callCount).to.equal(1);
+            expect(beforeEnterStub.callCount).to.equal(1);
+            expect(onEnterStub.callCount).to.equal(1);
+        });
+
+        it('calls onEnter callback and appends params and query to currentViewState and nextViewState', () => {
+            window.history.pushState(null, null, '/');
+            const beforeExitStub = sinon.stub();
+            const beforeEnterStub = sinon.stub();
+            const onEnterStub = sinon.stub();
+
+            const index: Route = new Route({
+                name: 'index',
+                path: '/',
+                component: TestComponent,
+                beforeExit: state => {
+                    beforeExitStub();
+                },
+            });
+
+            const home = new Route({
+                name: 'home',
+                path: '/home/:userId',
+                component: TestComponent,
+                beforeEnter: state => {
+                    beforeEnterStub();
+                },
+                onEnter: state => {
+                    onEnterStub(state);
+                },
+            });
+            const router = new Router();
+            router.start([index, home]);
+            router.goTo('home', { userId: 'test' }, { foo: 'bar' });
+            expect(onEnterStub.getCall(0).args[0]).to.deep.equal({
+                currentViewState: { route: home, params: { userId: 'test' }, query: { foo: 'bar' }, hash: '' },
+                previousViewState: { route: index, params: {}, query: {}, hash: '' },
+            });
+            expect(window.location.search).to.equal('?foo=bar');
+            expect(window.location.pathname).to.equal('/home/test');
+            expect(beforeExitStub.calledBefore(beforeEnterStub)).to.be.true;
+            expect(beforeEnterStub.calledBefore(onEnterStub)).to.be.true;
+            expect(beforeExitStub.callCount).to.equal(1);
+            expect(beforeEnterStub.callCount).to.equal(1);
+            expect(onEnterStub.callCount).to.equal(1);
         });
     });
 });

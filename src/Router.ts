@@ -84,7 +84,7 @@ export class Router implements IRouter {
     }
 
     @action
-    goTo(name: string, params?: IPathParams, query?: IQueryParams, hash?: string) {
+    goTo(name: string, params: IPathParams = {}, query: IQueryParams = {}, hash: string = '') {
 
         // beforeExit method
         const currentRoute = this._currentRoute;
