@@ -42,6 +42,7 @@ export interface IRouter {
     currentParams: IPathParams; // depricated for currentPathParams
     currentPath: string;
     currentViewState: IViewState;
+    get(name: string): IRoute;
     goTo(name: string, params?: IPathParams, query?: IQueryParams): void;
     hasRoute(name: string): boolean;
 }

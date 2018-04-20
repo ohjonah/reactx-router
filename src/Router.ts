@@ -86,7 +86,6 @@ export class Router implements IRouter {
     @action
     goTo(name: string, params: IPathParams = {}, query: IQueryParams = {}, hash: string = '') {
 
-        // beforeExit method
         const currentRoute = this._currentRoute;
         const nextRoute = this._routes.get(name);
 
@@ -103,6 +102,8 @@ export class Router implements IRouter {
         // we do not display the 404 page here because the error came from the code base
         // and not the user going to a url that isn't supported
         invariant(isNullOrUndefined(nextRoute), `no route with name ${name} was configured, but router.goTo() was invoked with that name.`);
+
+        // beforeExit method
 
         const beforeExitViewState: ILifeCycleViewStates = {
             currentViewState: {
@@ -127,27 +128,31 @@ export class Router implements IRouter {
             : true;
 
         if (beforeExitResult === false) {
+            // stop route transition
             return;
         }
 
         // beforeEnter method
-        const newRoute = this._routes.get(name);
-
-        this._pathParams = params;
-        this._queryParams = query;
-        this._hash = hash;
 
         const beforeEnterViewState: ILifeCycleViewStates = beforeExitViewState;
 
-        const beforeEnterResult = newRoute.getLifecycleCallbackList('beforeEnter').every(cb => {
+        const beforeEnterResult = nextRoute.getLifecycleCallbackList('beforeEnter').every(cb => {
             const result = cb(beforeEnterViewState, this._store);
             return !(result === false);
         });
+
         if (beforeEnterResult === false) {
+            // stop route transition
             return;
         }
 
-        this._currentRoute = newRoute;
+        this._pathParams = nextParams;
+        this._queryParams = nextQuery;
+        this._hash = nextHash;
+
+        this._currentRoute = nextRoute;
+
+        // onEnter method
 
         const onEnterViewState: ILifeCycleViewStates = {
             previousViewState: {
@@ -164,7 +169,7 @@ export class Router implements IRouter {
             },
         };
 
-        newRoute.getLifecycleCallbackList('onEnter').forEach(cb => {
+        nextRoute.getLifecycleCallbackList('onEnter').forEach(cb => {
             cb(onEnterViewState, this._store);
         });
     }
@@ -220,7 +225,7 @@ export class Router implements IRouter {
 
     private _setupCurrentPathObserver(): void {
         autorun(() => {
-            if (this._currentRoute != null) {
+            if (this._currentRoute != null && this._currentRoute.name !== 'notfound') {
                 const uri = this._currentRoute.buildUri(this._pathParams, this._queryParams, this._hash);
                 const windowUri = window.location.pathname + window.location.search + window.location.hash;
                 if (uri != null && uri !== windowUri) {
