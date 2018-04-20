@@ -586,8 +586,9 @@ describe('Router', () => {
             expect(nestednestedStub.callCount).to.equal(0);
         });
 
-        it('calls beforeExit callback with currentViewState and nextViewState', () => {
+        it('calls beforeExit and onEnter callbacks with the proper params', () => {
             window.history.pushState(null, null, '/');
+
             const beforeExitStub = sinon.stub();
             const onEnterStub = sinon.stub();
 
@@ -608,9 +609,12 @@ describe('Router', () => {
                     onEnterStub();
                 },
             });
+
             const router = new Router();
             router.start([index, home]);
+
             router.goTo('home');
+
             expect(beforeExitStub.getCall(0).args[0]).to.deep.equal({
                 currentViewState: { route: index, params: {}, query: {}, hash: '' },
                 nextViewState: { route: home, params: {}, query: {}, hash: '' },
@@ -622,6 +626,7 @@ describe('Router', () => {
 
         it('calls beforeExit callback and appends params and query to currentViewState and nextViewState', () => {
             window.history.pushState(null, null, '/');
+
             const beforeExitStub = sinon.stub();
             const onEnterStub = sinon.stub();
 
@@ -645,7 +650,9 @@ describe('Router', () => {
 
             const router = new Router();
             router.start([index, home]);
+
             router.goTo('home', { userId: 'test' }, { foo: 'bar' });
+
             expect(beforeExitStub.getCall(0).args[0]).to.deep.equal({
                 currentViewState: { route: index, params: {}, query: {}, hash: '' },
                 nextViewState: { route: home, params: { userId: 'test' }, query: { foo: 'bar' }, hash: '' },
@@ -679,8 +686,10 @@ describe('Router', () => {
                     beforeEnterStub(state);
                 },
             });
+
             const router = new Router();
             router.start([index, home]);
+
             router.goTo('home');
 
             expect(beforeEnterStub.getCall(0).args[0]).to.deep.equal({
